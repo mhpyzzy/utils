@@ -1,5 +1,7 @@
 var copy=require('./src/copy.js');
-var date=require('./src/date.js');
+var Date=require('./src/date.js');
+var typeOf=require('./src/typeOf.js');
+var indexDB=require('./src/indexDB.js');
 
 ;(function(window,document,undfeined){
     var _i={
@@ -10,13 +12,15 @@ var date=require('./src/date.js');
 
 
         //日期处理
-        Date:date,
+        Date:Date,
 
         // 对象处理
 
-
+        //IndexDB
+        indexDB:indexDB,
         //其它
-        copy:copy
+        copy:copy,
+        typeOf:typeOf
 
     }
     window._i=_i;

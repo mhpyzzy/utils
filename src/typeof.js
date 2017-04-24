@@ -1,4 +1,8 @@
-var _typeof= function (obj) {
+/**
+ * 精确判断数据的类型
+ * @param {*任何类型} obj  
+ */
+var typeOf= function (obj) {
     const toString = Object.prototype.toString;
     const map = {
         '[object Boolean]'  : 'boolean',
@@ -15,4 +19,4 @@ var _typeof= function (obj) {
     return map[toString.call(obj)];
 }
 
-module.exports=_typeof
+module.exports=typeOf

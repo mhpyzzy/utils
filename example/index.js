@@ -117,13 +117,15 @@ IDB.prototype = {
             }
         }
     },
+    /**
+     * 保存数据到缓存同时更新indexDB,参数同saveToDB
+     */
     save: function (data,storeName, callback) {
         var oldCache=this.cache[storeName]; //原始的缓存
         if(!oldCache){
             console.log('表名不存在！');
             return;
         }
-
         var cacheKeyPath=oldCache[0]; //缓存的键值
         var autoId=oldCache.length;
         var target={};
@@ -159,6 +161,10 @@ IDB.prototype = {
             }
         }
     },
+    /**
+     * 处理获取数据时的参数
+     * param的格式详见 resolveParam的默认值
+     */
     resolveParam:function(param){
         var resolve={
             select:[], //['fid','name',...]
@@ -171,48 +177,201 @@ IDB.prototype = {
         if(!param){resolve=resolve};
         resolve=Object.assign({},resolve,param);
 
-        if(!resolve.where){  //确定游标的类型 默认store[,index]
+        //如果没有指定索引的情况下，就是用默认值store主键的方式遍历数据库查找
+        if(resolve.where.length<1){  //确定游标的类型 默认store[,index]
             resolve.cursorType='store' //根据主键创建游标
+            resolve.range=null;
+            return resolve
         }else{
             resolve.cursorType='index'  //根据索引创建游标
         }
 
         //正则处理resolve.where
-            //         switch (bound){
-            //     case 'only':
-            //         range=IDBKeyRange.only(values[0]);
-            //         break;
-            //     case 'lowerBound':
-            //         range=IDBKeyRange.lowerBound(values[0],values[1]||false);
-            //         break;
-            //     case 'upperBound':
-            //         range=IDBKeyRange.upperBound(values[0],values[1]||false);
-            //         break;
-            //     case 'bound':
-            //         range=IDBKeyRange.bound(values[0],values[1],values[2]||false,values[3]||false);
-            //         break;
-            //     default:
-            //         range=null;
-            // };
+        var reg=/=|>=|<=|>|</g; //检索操作符opers用
 
+        //循环分解 where 转化为数组处理
+        resolve.where=resolve.where.map(function(v){
+            var tempWhere=[];
+            var opers=v.match(reg); // 获取操作符集合,如：['<','>']
 
+            //拆分where字符串
+            if(opers.length<2){ //如果是单条件类似：['>','id',5]
+                tempWhere.push(opers[0]); //把操作符放入数组第一个
+                tempWhere=tempWhere.concat(v.split(opers[0]));
+                console.log(v.split(opers[0]),tempWhere)
+            }else{   //如果是多条件类似：[['<','>'],'id',[5,1]]
+                var value=[];
+                tempWhere.push(opers); //把操作符集合放入数组第一个
+                value.push(v.split(opers[0])[0]);
+                value.push(v.split(opers[0])[1].split(opers[1])[1]);
+                tempWhere.push(v.split(opers[0])[1].split(opers[1])[0]); //获取key
+                tempWhere.push(value);
+
+            }
+            return tempWhere;
+        })
+
+        //转化resolve.where 到Range格式,,只把第一个条件给到下面switch转化，其余条件在后续处理；
+        switch (resolve.where[0][0]) {
+            case '=':
+                //该方法保证在查询时，只查询特定键，相当于直接访问存储空间并调用get(key)
+                resolve.range = IDBKeyRange.only(firstWhere[2]);
+                break;
+            case '>':
+                //该方法指定结果集的下界，即从该key(包括key)开始查找，直到结束。第二个参数默认为false(即不排除边界值)
+                resolve.range = IDBKeyRange.lowerBound(firstWhere[2], true);
+                break;
+            case '>=':
+                //该方法指定结果集的下界，即从该key(包括key)开始查找，直到结束。第二个参数默认为false(即不排除边界值)
+                resolve.range = IDBKeyRange.lowerBound(firstWhere[2], false);
+                break;
+            case '<':
+                //该方法指定结果集的上界，游标从头查找到该key(包括该key所在对象)。第二个参数默认为false(即不排除边界值)
+                resolve.range = IDBKeyRange.upperBound(firstWhere[2], true);
+                break;
+            case '<=':
+                //该方法指定结果集的上界，游标从头查找到该key(包括该key所在对象)。第二个参数默认为false(即不排除边界值)
+                resolve.range = IDBKeyRange.upperBound(firstWhere[2], false);
+                break;
+            case ['<','>']:
+                //该方法同时指定上下界，4个参数含义分别为下界的键，上界的键，是否跳过下界，是否跳过上界。
+                resolve.range = IDBKeyRange.bound(firstWhere[2][0], firstWhere[2][1], true,true);
+                break;
+            case ['<=','>=']:
+                //该方法同时指定上下界，4个参数含义分别为下界的键，上界的键，是否跳过下界，是否跳过上界。
+                resolve.range = IDBKeyRange.bound(firstWhere[2][0], firstWhere[2][1], false,false);
+                break;
+            case ['<','>=']:
+                //该方法同时指定上下界，4个参数含义分别为下界的键，上界的键，是否跳过下界，是否跳过上界。
+                resolve.range = IDBKeyRange.bound(firstWhere[2][0], firstWhere[2][1], true,false);
+                break;
+            case ['<=','>']:
+                //该方法同时指定上下界，4个参数含义分别为下界的键，上界的键，是否跳过下界，是否跳过上界。
+                resolve.range = IDBKeyRange.bound(firstWhere[2][0], firstWhere[2][1], false,true);
+                break;
+            default:
+                resolve.range = null;
+        };
 
         return resolve;
     },
-    getFromDB: function (param,storeName,callback) {
 
-
-
+    /**
+     * 获取indexDB数据
+     * storeName  表名
+     * param 传入的参数 为空时获取全部数据
+     * param格式：
+     * param={
+            select:[], //['fid','name',...]
+            where:[],  //['fid=0','status>0','age<=18']
+            limit:[0],  //[0,20] 默认[0]
+            direction:'next', //方向 默认next, [,prev]
+            orderBy:'',  //默认不排序
+            update:{}  //要更新的数据{key1:value1,key2:value2,...}
+        }
+     */
+    getFromDB: function (param, storeName, callback) {
+        if(!storeName) {
+            console.log('请指定表名！')
+            return
+        }
+        var param = this.resolveParam(param);
 
         this.openDB(_get);
-        function _get(db){
+        var that=this;
+        function _get(db) {
             var store = getStore(db, storeName, 'readwrite');
-            var cursor=null; //游标或者索引的指针
+            var cursor = null; //游标或者索引的指针
+            var data=[]; //用来存放获取的数据结果
 
+            if (param.cursorType == 'store') { //没有制定where时就用主键做游标指针
+                cursor = store.openCursor(param.range, param.direction);
+            } else {  //有where时就用 索引index做游标指针 经转化后的where格式:[['<','id',5],...],有索引是只取第一个；
+                cursor = store.index(param.where[0][1]).openCursor(result.range, result.direction)
+            }
+
+            cursor.onsuccess=function(e){
+
+                var result = e.target.result; //获取当前游标指向的结果
+                if(!!result){
+                    if(param.select.length==0){
+                        data.push(result.value)
+                    }else{
+                        var tempVal={};
+                        for(var i=0;i<param.select.length;i++){
+                            tempVal[param.select[i]]=result.value[param.select[i]];
+                        }
+
+                        data.push()
+                    }
+                    result.continue();  //指针指向结果集的下一项
+
+                }else{  //结果集遍历完成
+
+                    //处理排序 (升序)
+                    if (!!param.orderby) {
+                        data.sort(function (cur, next) {
+                            return cur[param.orderby] >= next[param.orderby] ? 1 : -1;
+                        });
+                    }
+
+                    //处理返回数据长度
+                    data=data.slice(param.limit[0],param.limit[1]);
+
+                    if(isFunction(callback)){
+                         callback(data)
+                    }
+                }
+
+            };
+
+            cursor.onerror=that.errorHandler;
         };
     },
-    get: function () {
 
+    /**
+     * 获取缓存数据
+     * 参数同 getFromDB
+     */
+    get: function (param, storeName, callback) {
+
+        if (!storeName) {
+            console.log('请指定表名！')
+            return
+        }
+
+        var data = this.cache[storeName].slice(1);  //获取所有缓存数据
+
+        if(!!param){
+            var param = this.resolveParam(param);
+            var keyPath = this.cache[storeName][0];  //获取当前表的主键
+
+            if(param.select.length>0){
+                var tempDatas = [];
+                for (var i = 0; i < data.length; i++) {
+                    var tempData = {};
+                    for (var j = 0; j < param.select.length; j++) {
+                        tempData[param.select[j]] = data[i][param.select[j]];
+                    };
+                    tempDatas.push(tempData);
+                }
+                data = tempDatas;
+            }
+
+            //处理排序 (升序)
+            if (!!param.orderby) {
+                data.sort(function (cur, next) {
+                    return cur[param.orderby] >= next[param.orderby] ? 1 : -1;
+                });
+            }
+
+            //处理返回数据长度
+            data = data.slice(param.limit[0], param.limit[1]);
+        }
+
+        if(isFunction(callback)){
+            callback(data);
+        }
     },
     updateDB: function () {},
     updata: function () {},

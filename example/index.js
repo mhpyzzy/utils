@@ -7,7 +7,7 @@ var IDB = function (option) {
      */
     this.cache = {
         table1:['id'],
-        table1:['id']
+        table2:['id']
     };
     var _default = {
         name: 'indexDB',
@@ -128,14 +128,14 @@ IDB.prototype = {
         }
         var cacheKeyPath=oldCache[0]; //缓存的键值
         var autoId=oldCache.length;
-        var target={};
-            target[cacheKeyPath]=autoId;
+        // var target={};
+        //     target[cacheKeyPath]=autoId;
         if(Array.isArray(data)){
             for(var j=0;j<data.length;j++){
-                pushCache();
+                pushCache(data[j]);
             }
         }else if(isObject(data)){
-            pushCache();
+            pushCache(data);
         }else{
             console.log('数据格式不符！')
             return
@@ -143,10 +143,13 @@ IDB.prototype = {
         //同时保存到indexDB
         this.saveToDB(data,storeName, callback); 
         //处理单条记录插入缓存
-        function pushCache(){
+        function pushCache(data){
             var exist=false; //记录数据的键值在原始数据中是否存在
+            var target = {};
+            target[cacheKeyPath] = autoId;
             if(!data[cacheKeyPath]){  //无键值的数据自增处理
                 oldCache.push(Object.assign(target,data));
+                autoId++;
             }else{
                 for(var i=1;i<oldCache.length;i++){ //0是主键名  
                     if(data[index]==oldCache[i][index]){ //如果有相同的，就合并
@@ -156,7 +159,7 @@ IDB.prototype = {
                     }
                 }
                 if(!exist){  //如果没有就直接push
-                   oldCache.push(Object.assign(target,data));
+                   oldCache.push(data);
                 }
             }
         }
@@ -198,7 +201,8 @@ IDB.prototype = {
             if(opers.length<2){ //如果是单条件类似：['>','id',5]
                 tempWhere.push(opers[0]); //把操作符放入数组第一个
                 tempWhere=tempWhere.concat(v.split(opers[0]));
-                console.log(v.split(opers[0]),tempWhere)
+                tempWhere[0]=tempWhere[0]=='='?'==':tempWhere[0];
+                
             }else{   //如果是多条件类似：[['<','>'],'id',[5,1]]
                 var value=[];
                 tempWhere.push(opers); //把操作符集合放入数组第一个
@@ -206,6 +210,9 @@ IDB.prototype = {
                 value.push(v.split(opers[0])[1].split(opers[1])[1]);
                 tempWhere.push(v.split(opers[0])[1].split(opers[1])[0]); //获取key
                 tempWhere.push(value);
+                for(var i=0;i<tempWhere.length;i++){
+                    tempWhere[i]=tempWhere[i]=='='?'==':tempWhere[i];
+                }
 
             }
             return tempWhere;
@@ -215,39 +222,39 @@ IDB.prototype = {
         switch (resolve.where[0][0]) {
             case '=':
                 //该方法保证在查询时，只查询特定键，相当于直接访问存储空间并调用get(key)
-                resolve.range = IDBKeyRange.only(firstWhere[2]);
+                resolve.range = IDBKeyRange.only(resolve.where[0][2]);
                 break;
             case '>':
                 //该方法指定结果集的下界，即从该key(包括key)开始查找，直到结束。第二个参数默认为false(即不排除边界值)
-                resolve.range = IDBKeyRange.lowerBound(firstWhere[2], true);
+                resolve.range = IDBKeyRange.lowerBound(resolve.where[0][2], true);
                 break;
             case '>=':
                 //该方法指定结果集的下界，即从该key(包括key)开始查找，直到结束。第二个参数默认为false(即不排除边界值)
-                resolve.range = IDBKeyRange.lowerBound(firstWhere[2], false);
+                resolve.range = IDBKeyRange.lowerBound(resolve.where[0][2], false);
                 break;
             case '<':
                 //该方法指定结果集的上界，游标从头查找到该key(包括该key所在对象)。第二个参数默认为false(即不排除边界值)
-                resolve.range = IDBKeyRange.upperBound(firstWhere[2], true);
+                resolve.range = IDBKeyRange.upperBound(resolve.where[0][2], true);
                 break;
             case '<=':
                 //该方法指定结果集的上界，游标从头查找到该key(包括该key所在对象)。第二个参数默认为false(即不排除边界值)
-                resolve.range = IDBKeyRange.upperBound(firstWhere[2], false);
+                resolve.range = IDBKeyRange.upperBound(resolve.where[0][2], false);
                 break;
             case ['<','>']:
                 //该方法同时指定上下界，4个参数含义分别为下界的键，上界的键，是否跳过下界，是否跳过上界。
-                resolve.range = IDBKeyRange.bound(firstWhere[2][0], firstWhere[2][1], true,true);
+                resolve.range = IDBKeyRange.bound(resolve.where[0][2][0], resolve.where[0][2][1], true,true);
                 break;
             case ['<=','>=']:
                 //该方法同时指定上下界，4个参数含义分别为下界的键，上界的键，是否跳过下界，是否跳过上界。
-                resolve.range = IDBKeyRange.bound(firstWhere[2][0], firstWhere[2][1], false,false);
+                resolve.range = IDBKeyRange.bound(resolve.where[0][2][0], resolve.where[0][2][1], false,false);
                 break;
             case ['<','>=']:
                 //该方法同时指定上下界，4个参数含义分别为下界的键，上界的键，是否跳过下界，是否跳过上界。
-                resolve.range = IDBKeyRange.bound(firstWhere[2][0], firstWhere[2][1], true,false);
+                resolve.range = IDBKeyRange.bound(resolve.where[0][2][0], resolve.where[0][2][1], true,false);
                 break;
             case ['<=','>']:
                 //该方法同时指定上下界，4个参数含义分别为下界的键，上界的键，是否跳过下界，是否跳过上界。
-                resolve.range = IDBKeyRange.bound(firstWhere[2][0], firstWhere[2][1], false,true);
+                resolve.range = IDBKeyRange.bound(resolve.where[0][2][0], resolve.where[0][2][1], false,true);
                 break;
             default:
                 resolve.range = null;
@@ -334,12 +341,10 @@ IDB.prototype = {
      * 参数同 getFromDB
      */
     get: function (param, storeName, callback) {
-
         if (!storeName) {
             console.log('请指定表名！')
             return
         }
-
         var data = this.cache[storeName].slice(1);  //获取所有缓存数据
 
         if(!!param){
@@ -350,7 +355,7 @@ IDB.prototype = {
                 var tempDatas = [];
                 for (var i = 1; i < data.length; i++) {
                     handleWhere(param.where, data[i], function () {
-                        tempData.push(data[i]);
+                        tempDatas.push(data[i]);
                     }, true);
                 }
                 data = tempDatas;
@@ -476,14 +481,17 @@ IDB.prototype = {
         this.updateDB(param, storeName, callback);
     },
     delDBData: function (param, storeName, callback) {
-        if (!storeName || param == '') {
-            console.log('表名或 参数为空！')
+        if (!storeName) {
+            console.log('表名不能为空！')
             return
         }
-
+        if (param == '') {
+            this.clear(storeName);
+            return
+        }
         var param = this.resolveParam(param);
         if (param.where.length == 0) {
-            this.clear();
+            this.clear(storeName);
             return
         }
 
@@ -527,14 +535,17 @@ IDB.prototype = {
         };
     },
     delData: function (param, storeName, callback) {
-        if (!storeName || param == '') {
-            console.log('表名或 参数为空！')
+        if (!storeName) {
+            console.log('表名不能为空！')
             return
         }
-
+        if (param == '') {
+            this.clear(storeName);
+            return
+        }
         var param = this.resolveParam(param);
         if (param.where.length == 0) {
-            this.clear();
+            this.clear(storeName);
             return
         }
 
@@ -655,13 +666,13 @@ function handleWhere(where,curVal,callback,boolen) {
             key = where[i][1],
             val = where[i][2];
         if (Array.isArray(oper)) {  //如果为多条件，如'5<id>=0'
-            if (eval(val[0] + oper[0] + curVal[key] + oper[1] + val[1])) {
+            if (eval(val[0] + oper[0] + 'curVal[key]' + oper[1] + val[1])) {
                 if (isFunction(callback)) {
                     callback()
                 }
             }
         } else { //如果为单条件，如：'if>10'
-            if (eval(curVal[key] + oper + val)) {
+            if (eval('curVal[key]' + oper + val)) {
                 if (isFunction(callback)) {
                     callback()
                 }

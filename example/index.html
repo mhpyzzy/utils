@@ -7,14 +7,14 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <script src="../build/_i.min.js"></script>
-    <script src="./index.js">
-        >
-    </script>
+    <script src="./index.js"></script>
 </head>
 
 <body>
-    <div id="put">click</div>
+    <div id="put">save</div>
     <div id="del">del</div>
+    <div id="delDate">delDate</div>
+    <div id="get">get</div>
     <script>
         var opt = {
             name: 'chatDB',
@@ -32,7 +32,7 @@
         //     {id:3,name:'zdy'},
         //     {name:'adi'}
         // ]
-                var data=[
+        var data=[
             {name:'zzy'},
             {name:'zzhisdfasy'},
             {name:'zdy'}
@@ -43,6 +43,18 @@
         document.getElementById('del').onclick=function(){
             chat.delDB('chatDB')
         }
+        document.getElementById('delDate').onclick=function(){
+            chat.delData('','table2')
+        }
+        document.getElementById('get').onclick=function(){
+            chat.get({
+                select:['name'],
+                where:['name="zzy"']
+            },'table2',function(data){
+                console.log(data)
+            })
+        }
+
     </script>
 </body>
 

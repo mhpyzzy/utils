@@ -1,15 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <script src="../build/_i.min.js"></script>
+    <script src="./index.js">
+        >
+    </script>
 </head>
+
 <body>
+    <div id="put">click</div>
+    <div id="del">del</div>
     <script>
-        console.log(_i.Date(1000000,'yyyy-MM-dd hh:mm:ss'));
+        var opt = {
+            name: 'chatDB',
+            version: 1,
+        };
+        var chat = new IDB(opt);
+            // chat.delDB('chatDB')
+        //    chat.openDB(function(db){
+        //         console.log('sadfasdfsa')
+        //    });
+        //    chat.clearDB('table1')
+        // var data=[
+        //     {id:1,name:'zzy'},
+        //     {id:2,name:'zzhisdfasy'},
+        //     {id:3,name:'zdy'},
+        //     {name:'adi'}
+        // ]
+                var data=[
+            {name:'zzy'},
+            {name:'zzhisdfasy'},
+            {name:'zdy'}
+        ]
+        document.getElementById('put').onclick=function(){
+            chat.save(data,'table2')
+        }
+        document.getElementById('del').onclick=function(){
+            chat.delDB('chatDB')
+        }
     </script>
 </body>
+
 </html>

@@ -36,17 +36,6 @@ var date = function (date, format) {
     fmt = fmt.replace(/y+/g, function (v) {
         return time.y.toString().slice(-(v.length))
     });
-    fmt = fmt.replace(/C/g, function (v) {
-        var c = '更久';
-        if ((y == new Date().getFullYear()) && (M = new Date().getMonth() + 1)) {
-            if (d == new Date().getDate()) {
-                c = '今天'
-            } else if (d == new Date().getDate() - 1) {
-                c = '昨天'
-            }
-        }
-        return c;
-    })
     return fmt
 }
 

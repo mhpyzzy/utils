@@ -346,7 +346,17 @@ IDB.prototype = {
             var param = this.resolveParam(param);
             var keyPath = this.cache[storeName][0];  //获取当前表的主键
 
-            if(param.select.length>0){
+            if (param.where.length > 0) {  //where条件存在时筛选
+                var tempDatas = [];
+                for (var i = 1; i < data.length; i++) {
+                    handleWhere(param.where, data[i], function () {
+                        tempData.push(data[i]);
+                    }, true);
+                }
+                data = tempDatas;
+            }
+      
+            if(param.select.length>0){ //select 存在是 进行过滤
                 var tempDatas = [];
                 for (var i = 0; i < data.length; i++) {
                     var tempData = {};
@@ -373,10 +383,172 @@ IDB.prototype = {
             callback(data);
         }
     },
-    updateDB: function () {},
-    updata: function () {},
-    delDB: function () {},
-    del: function () {},
+
+    /**
+     * 更新indexDB数据
+     * 参数同 getFromDB 其中(select,limit,direction,orderBy) 不用传
+     */
+    updateDB: function (param, storeName, callback) {
+        if (!storeName||param=='') {
+            console.log('表名或 参数为空！')
+            return
+        }
+
+        var param = this.resolveParam(param);
+        if(Object.keys(param.updata).length==0){
+            console.log('没有传入要更新的数据！');
+            return
+        }
+
+        this.openDB(_update);
+        var that=this;
+        function _update() {
+            var store = getStore(db, storeName, 'readwrite');
+            var cursor = null; //游标或者索引的指针
+            var data = []; //用来存放获取的数据结果
+
+            if (param.cursorType == 'store') { //没有制定where时就用主键做游标指针
+                cursor = store.openCursor(param.range, param.direction);
+            } else {  //有where时就用 索引index做游标指针 经转化后的where格式:[['<','id',5],...],有索引是只取第一个；
+                cursor = store.index(param.where[0][1]).openCursor(result.range, result.direction)
+            }
+
+            cursor.onsuccess=function(e){
+                var result = e.target.result;
+                var updateRequest;
+                 if(!!result){
+                     data.push(result.value);
+                     var value = result.value || {};
+                    //  此处还需循环 where的其余条件
+                     if (param.where.length >= 2) {
+                            handleWhere(param.where,value,function () { cursorUpdate(result) });
+                     } else {
+                        cursorUpdate(result);  //更新
+                     }
+                     
+                     result.continue();
+                 }else{
+                     if(isFunction(callback)){
+                         callback(data)
+                     }
+                 }
+            };
+            cursor.onerror=that.errorHandler;
+            
+            function cursorUpdate(result) {
+                Object.assign(value, param.updata || {});
+                updateRequest = result.update(value);  //更新
+                updateRequest.onerror = that.errorHandler;
+                updateRequest.onsuccess = function () { };
+            }
+        };
+
+    },
+
+    /**
+     * 更新缓存数据 同时更新 indexDB数据
+     * 参数同  updateDB
+     */
+    updata: function (param, storeName, callback) {
+        if (!storeName||param=='') {
+            console.log('表名或 参数为空！')
+            return
+        }
+
+        var param = this.resolveParam(param);
+        if (Object.keys(param.updata).length == 0) {
+            console.log('没有传入要更新的数据！');
+            return
+        }
+
+        var data=this.cache[storeName];
+        for(var i=1;i<data.length;i++){
+            if(param.where.length>0){
+                 handleWhere(param.where,data[i],function () {
+                     Object.assign(data,param.updata);
+                 },true);
+            }else{
+                Object.assign(data,param.updata);
+            }
+        }
+
+        //同时更新indexDB
+        this.updateDB(param, storeName, callback);
+    },
+    delDBData: function (param, storeName, callback) {
+        if (!storeName || param == '') {
+            console.log('表名或 参数为空！')
+            return
+        }
+
+        var param = this.resolveParam(param);
+        if (param.where.length == 0) {
+            this.clear();
+            return
+        }
+
+        this.openDB(_update);
+        var that = this;
+        function _update() {
+            var store = getStore(db, storeName, 'readwrite');
+            var cursor = null; //游标或者索引的指针
+            var data = []; //用来存放获取的数据结果
+
+            //索引index做游标指针 经转化后的where格式:[['<','id',5],...],有索引是只取第一个；
+            cursor = store.index(param.where[0][1]).openCursor(result.range, result.direction)
+
+            cursor.onsuccess = function (e) {
+                var result = e.target.result;
+                var deleteRequest;
+                if (!!result) {
+                    data.push(result.value);
+                    var value = result.value || {};
+                    //  此处还需循环 where的其余条件
+                    if (param.where.length >= 2) {
+                        handleWhere(param.where, value, function () { cursorDelete(result) });
+                    } else {
+                        cursorDelete(result);  //更新
+                    }
+
+                    result.continue();
+                } else {
+                    if (isFunction(callback)) {
+                        callback(data)
+                    }
+                }
+            };
+            cursor.onerror = that.errorHandler;
+
+            function cursorDelete(result) {
+                deleteRequest = result.delete();  //更新
+                deleteRequest.onerror = that.errorHandler;
+                deleteRequest.onsuccess = function () {console.log('删除该记录成功')};
+            }
+        };
+    },
+    delData: function (param, storeName, callback) {
+        if (!storeName || param == '') {
+            console.log('表名或 参数为空！')
+            return
+        }
+
+        var param = this.resolveParam(param);
+        if (param.where.length == 0) {
+            this.clear();
+            return
+        }
+
+
+        var data = this.cache[storeName];
+        for (var i = 1; i < data.length; i++) {
+            handleWhere(param.where, data[i], function () {
+                data.splice(i, 1)
+            }, true);
+        }
+
+        //同时更新indexDB
+        this.delDBData(param, storeName, callback);
+    },
     //清除数据库和缓存全部记录
     clear:function(storeName){
         this.openDB(_clear);
@@ -468,6 +640,34 @@ function getStore(db, storeName, mode) {
     var transaction = db.transaction([storeName], mode);
     var store = transaction.objectStore(storeName);
     return store;
+};
+
+/**
+ * 处理索引情况下，剩余where条件的判断和筛选
+ * where param里面的条件数组
+ * curVal 对比的当前数据
+ * boolen 确定是从where 第几个条件开始；默认为false(第一个)，true(第二个)
+ */
+function handleWhere(where,curVal,callback,boolen) {
+    var _index=boolen?0:1;
+    for (var i = _index; i < where.length; i++) {
+        var oper = where[i][0],
+            key = where[i][1],
+            val = where[i][2];
+        if (Array.isArray(oper)) {  //如果为多条件，如'5<id>=0'
+            if (eval(val[0] + oper[0] + curVal[key] + oper[1] + val[1])) {
+                if (isFunction(callback)) {
+                    callback()
+                }
+            }
+        } else { //如果为单条件，如：'if>10'
+            if (eval(curVal[key] + oper + val)) {
+                if (isFunction(callback)) {
+                    callback()
+                }
+            }
+        }
+    }
 };
 //判断是否Function
 function isFunction(fn){

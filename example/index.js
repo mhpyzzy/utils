@@ -1,3 +1,13 @@
+/**
+ *---------------------------------------------------------
+ * Author: Aron zhang
+ * Email: 41921926@qq.com
+ * Version:1.0
+ * DESCRIPTION: indexDB
+ * 
+ *---------------------------------------------------------
+ */
+
 var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 var IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
 var IDB = function (option) {
@@ -27,10 +37,20 @@ var IDB = function (option) {
     };
     this.setting = Object.assign({}, _default, option)
 }
-//----------------------------------------------------------------------------
+//-------------------------------------------------
 //挂载原型方法
 IDB.prototype = {
     constructor: IDB,
+    
+    /**
+     *---------------------------------------------------------
+     * Fn_name: openDB
+     * Fn_DES: 打开数据库的方法, (打开成功时返回db作为callback的参数传入)
+     * @param:  callback,/type: Function/ 默认值: / 描述: 打开成功后要处理的逻辑函数
+     * 
+     *---------------------------------------------------------
+     */
+    
     openDB:function(callback) {
         var opt=this.setting;
         if (!indexedDB) {
@@ -75,12 +95,18 @@ IDB.prototype = {
 
         };
     },
+    
     /**
-     * 保存数据，无则保存，有责更新(表结构有主键，则根据主键来搜索和更新,这种情况下若传入数据无主键，则会报错)
-     * @param data格式：[{},{}...]或者单条数据{};
-     * @param storeName 存储的表名【type:string】
-     * @param callback 保存成功后的回调 传入的参数为主键值；
+     *---------------------------------------------------------
+     * Fn_name: saveToDB
+     * Fn_DES: 保存数据，无则保存，有责更新(表结构有主键，则根据主键来搜索和更新,这种情况下若传入数据无主键，则会报错)
+     * @param:  data,/type: [{},{}...]或者单条数据{}/ 默认值: / 描述: 
+     * @param:  storeName,/type: string/ 默认值: / 描述: 
+     * @param:  callback,/type: / 默认值: / 描述: 保存成功后的回调 传入的参数为主键值；
+     * 
+     *---------------------------------------------------------
      */
+    
     saveToDB:function(data,storeName, callback){
         this.openDB(_put);
         function _put(db){
@@ -117,9 +143,16 @@ IDB.prototype = {
             }
         }
     },
+    
     /**
-     * 保存数据到缓存同时更新indexDB,参数同saveToDB
+     *---------------------------------------------------------
+     * Fn_name: save
+     * Fn_DES: 保存数据到缓存同时更新indexDB,
+     * @param:  ,/type: / 默认值: / 描述: 参数同saveToDB
+     * 
+     *---------------------------------------------------------
      */
+    
     save: function (data,storeName, callback) {
         var oldCache=this.cache[storeName]; //原始的缓存
         if(!oldCache){
@@ -164,10 +197,16 @@ IDB.prototype = {
             }
         }
     },
+    
     /**
-     * 处理获取数据时的参数
-     * param的格式详见 resolveParam的默认值
+     *---------------------------------------------------------
+     * Fn_name: resolveParam
+     * Fn_DES: 处理获取数据时的参数
+     * @param: param ,/type: {}/ 默认值: / 描述: 格式详见 resolveParam的默认值
+     * 
+     *---------------------------------------------------------
      */
+    
     resolveParam:function(param){
         var resolve={
             select:[], //['fid','name',...]
@@ -262,21 +301,27 @@ IDB.prototype = {
 
         return resolve;
     },
-
+    
     /**
-     * 获取indexDB数据
-     * storeName  表名
-     * param 传入的参数 为空时获取全部数据
-     * param格式：
-     * param={
-            select:[], //['fid','name',...]
-            where:[],  //['fid=0','status>0','age<=18']
-            limit:[0],  //[0,20] 默认[0]
-            direction:'next', //方向 默认next, [,prev]
-            orderBy:'',  //默认不排序
-            update:{}  //要更新的数据{key1:value1,key2:value2,...}
-        }
+     *---------------------------------------------------------
+     * Fn_name: getFromDB
+     * Fn_DES: 获取indexDB数据
+     * @param: param ,/type: 
+     *                / 默认值: param={
+                                            select:[], //['fid','name',...]
+                                            where:[],  //['fid=0','status>0','age<=18']
+                                            limit:[0],  //[0,20] 默认[0]
+                                            direction:'next', //方向 默认next, [,prev]
+                                            orderBy:'',  //默认不排序
+                                            update:{}  //要更新的数据{key1:value1,key2:value2,...}
+                                        }
+                        / 描述: 传入的参数 为空时获取全部数据
+     * @param: storeName ,/type: string/ 默认值: / 描述: 表名
+     * @param: callback ,/type: Function/ 默认值: / 描述: 回掉
+     * 
+     *---------------------------------------------------------
      */
+    
     getFromDB: function (param, storeName, callback) {
         if(!storeName) {
             console.log('请指定表名！')
@@ -337,9 +382,14 @@ IDB.prototype = {
     },
 
     /**
-     * 获取缓存数据
-     * 参数同 getFromDB
+     *---------------------------------------------------------
+     * Fn_name: get
+     * Fn_DES: 获取缓存数据
+     * @param: ,/type: / 默认值: / 描述: 参数同 getFromDB
+     * 
+     *---------------------------------------------------------
      */
+    
     get: function (param, storeName, callback) {
         if (!storeName) {
             console.log('请指定表名！')
@@ -393,6 +443,16 @@ IDB.prototype = {
      * 更新indexDB数据
      * 参数同 getFromDB 其中(select,limit,direction,orderBy) 不用传
      */
+    
+    /**
+     *---------------------------------------------------------
+     * Fn_name: updateDB
+     * Fn_DES: 更新indexDB数据
+     * @param: ,/type: / 默认值: / 描述: 参数同 getFromDB 其中(select,limit,direction,orderBy) 不用传
+     * 
+     *---------------------------------------------------------
+     */
+    
     updateDB: function (param, storeName, callback) {
         if (!storeName||param=='') {
             console.log('表名或 参数为空！')
@@ -449,11 +509,16 @@ IDB.prototype = {
         };
 
     },
-
+    
     /**
-     * 更新缓存数据 同时更新 indexDB数据
-     * 参数同  updateDB
+     *---------------------------------------------------------
+     * Fn_name: updata
+     * Fn_DES: 更新缓存数据 同时更新 indexDB数据
+     * @param:  ,/type: / 默认值: / 描述: 参数同  updateDB
+     * 
+     *---------------------------------------------------------
      */
+    
     updata: function (param, storeName, callback) {
         if (!storeName||param=='') {
             console.log('表名或 参数为空！')
@@ -480,6 +545,16 @@ IDB.prototype = {
         //同时更新indexDB
         this.updateDB(param, storeName, callback);
     },
+    
+    /**
+     *---------------------------------------------------------
+     * Fn_name: delDBData
+     * Fn_DES: 
+     * @param:  ,/type: / 默认值: / 描述: 
+     * 
+     *---------------------------------------------------------
+     */
+    
     delDBData: function (param, storeName, callback) {
         if (!storeName) {
             console.log('表名不能为空！')
@@ -534,6 +609,16 @@ IDB.prototype = {
             }
         };
     },
+    
+    /**
+     *---------------------------------------------------------
+     * Fn_name: delData
+     * Fn_DES: 
+     * @param:  ,/type: / 默认值: / 描述: 
+     * 
+     *---------------------------------------------------------
+     */
+    
     delData: function (param, storeName, callback) {
         if (!storeName) {
             console.log('表名不能为空！')
@@ -560,7 +645,16 @@ IDB.prototype = {
         //同时更新indexDB
         this.delDBData(param, storeName, callback);
     },
-    //清除数据库和缓存全部记录
+    
+    /**
+     *---------------------------------------------------------
+     * Fn_name: clear
+     * Fn_DES: 清除数据库和缓存全部记录
+     * @param:  storeName,/type: string/ 默认值: / 描述: 表名
+     * 
+     *---------------------------------------------------------
+     */
+    
     clear:function(storeName){
         this.openDB(_clear);
         function _clear(db){
@@ -570,7 +664,16 @@ IDB.prototype = {
         }
         this.cache[storeName].length=1;
     },
-    //删除整个数据库同时清空缓存
+    
+    /**
+     *---------------------------------------------------------
+     * Fn_name: delDB
+     * Fn_DES: 删除整个数据库同时清空缓存
+     * @param:  dbName,/type: string/ 默认值: / 描述: 数据库名字
+     * 
+     *---------------------------------------------------------
+     */
+    
     delDB:function(dbName){
        indexedDB.deleteDatabase(dbName);
        this.cache={};
@@ -580,72 +683,32 @@ IDB.prototype = {
 
 
 // 私有函数
-//-------------------------------------------------
-/**
- * 打开数据库
- * return:打开成功时返回db作为callback的参数传入；
- * @param callback
- */
-function openDB(opt, callback) {
-    if (!indexedDB) {
-        console.log('你的浏览器不支持IndexedDB!')
-        return;
-    }
-    //打开一个indexDB(只有两个参数：名字和版本号)
-    var request = indexedDB.open(opt.name, opt.version);
-    request.onsuccess = function (e) {
-        var db = request.result;
-        if (callback) {
-            callback(db);
-        }
-    };
-    //错误处理
-    request.onerror = errorHandler;
-    //更新、删除、创建时的接口
-    request.onupgradeneeded = function (e) {
-        var db = e.target.result,
-            dbnames = db.objectStoreNames;
-        if (Array.isArray(opt.stores)) {
-            for (var i = 0; i < opt.stores.length; i++) {
-                //判断原始db中是否已存在新stroe的名字,不存在则创建
-                if (!dbnames.contains(opt.stores[i].name)) {
-                    var storeItem = opt.stores[i];
-                    var indexs = storeItem.index || '';
-                    //createObjectStore（）方法创建一个对象存储。 此方法接受两个参数： - 存储的名称和参数对象
-                    // 参数：{keyPath:'xx'} 数据库表中的主键,或者设置为自增ID{autoIncrement:true(默认为false)}
-                    var store = db.createObjectStore(storeItem.name, storeItem.param || {});
-                    //createIndex(name,value,unique)方法创建索引unique 默认false
-                    if (!!indexs) {
-                        for (var indexName in indexs) {
-                            store.createIndex(indexName, indexs[indexName][0], {
-                                unique: indexs[indexName][1] || false
-                            });
-                        }
-                    }
-                }
-            }
-        };
-        console.log("初始化成功:", db);
 
-    };
-};
 /**
- * 通用错误处理函数，冒泡机制；
+ *---------------------------------------------------------
+ * Fn_name: errorHandler
+ * Fn_DES: 通用错误处理函数，冒泡机制；
+ * @param:  e,/type: / 默认值: / 描述: window.event
+ * 
+ *---------------------------------------------------------
  */
+
 function errorHandler(e) {
     console.log("error:" + e.target.code);
     debugger;
 };
+
 /**
- * 获取DB事物
- * db :要获取事物的DB
- * objectStoreName: store的名称 type:string
- * mode :操作的类型(默认'readonly'只读/'readwrite'可写) type:string
- *  transaction(param1[,param2,param3])方法是用来指定我们想要进行事务处理的对象存储。
- *      改方法接受3个参数（第二个和第三个是可选的）。
- *      第一个是我们要处理的对象存储的列表，
- *      第二个指定我们是否要只读/读写，第三个是版本变化。
+ *---------------------------------------------------------
+ * Fn_name: getStore
+ * Fn_DES: 获取DB事物操作
+ * @param:  db,/type: indexedDB/ 默认值: / 描述: 要获取事物的DB实例
+ * @param:  storeName,/type: string/ 默认值: / 描述: 表名
+ * @param:  mode,/type: string/ 默认值: 'readonly'/ 描述: 操作的类型(默认'readonly'只读/'readwrite'可写)
+ * 
+ *---------------------------------------------------------
  */
+
 function getStore(db, storeName, mode) {
     var mode = mode || 'readonly';
     var transaction = db.transaction([storeName], mode);
@@ -654,11 +717,17 @@ function getStore(db, storeName, mode) {
 };
 
 /**
- * 处理索引情况下，剩余where条件的判断和筛选
- * where param里面的条件数组
- * curVal 对比的当前数据
- * boolen 确定是从where 第几个条件开始；默认为false(第一个)，true(第二个)
+ *---------------------------------------------------------
+ * Fn_name: handleWhere
+ * Fn_DES: 处理索引情况下，剩余where条件的判断和筛选
+ * @param:  where,/type: Array/ 默认值: []/ 描述: param里面的条件数组
+ * @param:  curVal,/type: Array/ 默认值: []/ 描述: 对比的当前数据
+ * @param:  callback,/type: Function/ 默认值: / 描述: 回掉
+ * @param:  boolen,/type: boolen/ 默认值: false/ 描述: 确定是从where 第几个条件开始；默认为false(第一个)，true(第二个)
+ * 
+ *---------------------------------------------------------
  */
+
 function handleWhere(where,curVal,callback,boolen) {
     var _index=boolen?0:1;
     for (var i = _index; i < where.length; i++) {
@@ -680,11 +749,29 @@ function handleWhere(where,curVal,callback,boolen) {
         }
     }
 };
-//判断是否Function
+
+/**
+ *---------------------------------------------------------
+ * Fn_name: isFunction
+ * Fn_DES: 判断是否Function
+ * @param:  ,/type: 任何类型的值/ 默认值: / 描述: 
+ * 
+ *---------------------------------------------------------
+ */
+
 function isFunction(fn){
     return Object.prototype.toString.call(fn)=='[object Function]'?true:false;
 }
-//判断是否{}
+
+/**
+ *---------------------------------------------------------
+ * Fn_name: isObject
+ * Fn_DES: 判断是否{}
+ * @param:  obj,/type: 任何类型的值/ 默认值: / 描述: 
+ * 
+ *---------------------------------------------------------
+ */
+
 function isObject(obj){
     return Object.prototype.toString.call(obj)=='[object Object]'?true:false;
 }

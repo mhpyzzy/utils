@@ -1,3 +1,4 @@
+
 var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 var IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
 var IDB = function (option) {
@@ -30,12 +31,15 @@ IDB.prototype={
 module.exports = new IDB(option);
 
 // 私有函数
-//-------------------------------------------------
 /**
- * 打开数据库
- * return:打开成功时返回db作为callback的参数传入；
- * @param callback
+ *---------------------------------------------------------
+ * Fn_name: openDB
+ * Fn_DES: 打开数据库
+ * @param:  ,/type: / 默认值: / 描述: 
+ * 
+ *---------------------------------------------------------
  */
+
 function openDB(callback) {
     if (!indexedDB) {
         console.log('你的浏览器不支持IndexedDB!')
@@ -52,8 +56,14 @@ function openDB(callback) {
     request.onupgradeneeded = upgrade;
 };
 /**
- * 更新数据库（创建，删除或修改数据库）时自动调用；
+ *---------------------------------------------------------
+ * Fn_name: upgrade
+ * Fn_DES: 更新数据库（创建，删除或修改数据库）时自动调用；
+ * @param:  ,/type: / 默认值: / 描述: 
+ * 
+ *---------------------------------------------------------
  */
+
 function upgrade(e) {
     var db = e.target.result,
         dbnames = db.objectStoreNames;
@@ -76,9 +86,16 @@ function upgrade(e) {
     };
     console.log("初始化成功:", db);
 };
+
 /**
- * 通用错误处理函数，冒泡机制；
+ *---------------------------------------------------------
+ * Fn_name: errorHandler
+ * Fn_DES: 通用错误处理函数，冒泡机制；
+ * @param:  ,/type: / 默认值: / 描述: 
+ * 
+ *---------------------------------------------------------
  */
+
 function errorHandler(e) {
     console.log("error:" + e.target.code);
     debugger;

@@ -1,7 +1,20 @@
+/**
+ *---------------------------------------------------------
+ * Author: Aron zhang
+ * Email: 41921926@qq.com
+ * Version:1.0
+ * DESCRIPTION: 
+ * 
+ *---------------------------------------------------------
+ */
+
+
+
 var copy=require('./src/copy.js');
 var Date=require('./src/date.js');
 var typeOf=require('./src/typeOf.js');
 var indexDB=require('./src/indexDB.js');
+
 
 ;(function(window,document,undfeined){
     var _i={
